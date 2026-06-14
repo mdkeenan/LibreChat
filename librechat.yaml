@@ -11,12 +11,3 @@ endpoints:
         fetch: false
       titleConvo: true
       modelDisplayLabel: "Perplexity"
-
-mcpServers:
-  google-drive:
-    type: "http"
-    url: "https://drivemcp.googleapis.com/mcp/v1"
-    headers:
-      Authorization: "Bearer /etc/secrets/google_key.json"
-
-

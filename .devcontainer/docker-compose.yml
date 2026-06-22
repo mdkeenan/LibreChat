@@ -39,13 +39,11 @@ services:
     container_name: chat-mongodb
     expose:
       - 27017
-    # ports:
-    #   - 27018:27017
-    image: mongo
-    # restart: always
+    image: mongo:8.0.20
+    restart: unless-stopped
     volumes:
-      - ./data-node:/data/db
-    command: mongod --noauth
+      - devcontainer_mongodb_data:/data/db
+    command: mongod --noauth --setParameter diagnosticDataCollectionEnabled=false
   meilisearch:
     container_name: chat-meilisearch
     image: getmeili/meilisearch:v1.5
@@ -60,3 +58,6 @@ services:
       - MEILI_MASTER_KEY=5c71cf56d672d009e36070b5bc5e47b743535ae55c818ae3b735bb6ebfb4ba63
     volumes:
       - ./meili_data_v1.5:/meili_data
+
+volumes:
+  devcontainer_mongodb_data:

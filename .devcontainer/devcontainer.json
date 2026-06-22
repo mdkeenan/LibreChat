@@ -3,6 +3,9 @@
   "service": "app",
   "workspaceFolder": "/workspaces",
   "forwardPorts": [3080, 3090],
+  "remoteEnv": {
+    "VITE_CACHE_DIR": "/tmp/vite-cache"
+  },
   "customizations": {
     "vscode": {
       "extensions": [

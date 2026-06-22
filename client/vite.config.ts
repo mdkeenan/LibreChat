@@ -15,17 +15,31 @@ const require = createRequire(import.meta.url);
  * with imports like `import process from 'vite-plugin-node-polyfills/shims/process'`. When the
  * consuming module (e.g. recoil) is hoisted to the monorepo root, Vite's ESM resolver walks up
  * from there and never finds the shims (installed only in client/node_modules). This map resolves
- * the shim specifiers to absolute paths via CJS require.resolve anchored to the client directory.
+ * the shim specifiers to absolute ESM paths under the hoisted package root.
+ */
+const polyfillsPackageRoot = path.resolve(
+  path.dirname(require.resolve('vite-plugin-node-polyfills/shims/global')),
+  '..',
+  '..',
+  '..',
+);
+
+/**
+ * require.resolve() targets CJS entries (dist/index.cjs). Vite 8 dev imports need ESM
+ * shims (dist/index.js) or the browser throws "does not provide an export named 'default'".
  */
 const NODE_POLYFILL_SHIMS: Record<string, string> = {
-  'vite-plugin-node-polyfills/shims/process': require.resolve(
-    'vite-plugin-node-polyfills/shims/process',
+  'vite-plugin-node-polyfills/shims/process': path.join(
+    polyfillsPackageRoot,
+    'shims/process/dist/index.js',
   ),
-  'vite-plugin-node-polyfills/shims/buffer': require.resolve(
-    'vite-plugin-node-polyfills/shims/buffer',
+  'vite-plugin-node-polyfills/shims/buffer': path.join(
+    polyfillsPackageRoot,
+    'shims/buffer/dist/index.js',
   ),
-  'vite-plugin-node-polyfills/shims/global': require.resolve(
-    'vite-plugin-node-polyfills/shims/global',
+  'vite-plugin-node-polyfills/shims/global': path.join(
+    polyfillsPackageRoot,
+    'shims/global/dist/index.js',
   ),
 };
 
@@ -45,6 +59,7 @@ const QUERY_DEVTOOLS_CHUNK_MODULES = [
 
 export default defineConfig(({ command }) => ({
   base: '',
+  cacheDir: process.env.VITE_CACHE_DIR ?? path.join('node_modules', '.vite'),
   server: {
     allowedHosts:
       (process.env.VITE_ALLOWED_HOSTS && process.env.VITE_ALLOWED_HOSTS.split(',')) || [],
@@ -69,8 +84,15 @@ export default defineConfig(({ command }) => ({
     react(),
     {
       name: 'node-polyfills-shims-resolver',
+      enforce: 'pre',
       resolveId(id) {
-        return NODE_POLYFILL_SHIMS[id] ?? null;
+        if (NODE_POLYFILL_SHIMS[id]) {
+          return NODE_POLYFILL_SHIMS[id];
+        }
+        if (id.includes('vite-plugin-node-polyfills/shims/') && id.endsWith('index.cjs')) {
+          return id.replace(/index\.cjs$/, 'index.js');
+        }
+        return null;
       },
     },
     nodePolyfills(),
@@ -400,6 +422,15 @@ export default defineConfig(({ command }) => ({
       '~': path.join(__dirname, 'src/'),
       $fonts: path.resolve(__dirname, 'public/fonts'),
       'micromark-extension-math': 'micromark-extension-llm-math',
+      'vite-plugin-node-polyfills/shims/process': NODE_POLYFILL_SHIMS[
+        'vite-plugin-node-polyfills/shims/process'
+      ],
+      'vite-plugin-node-polyfills/shims/buffer': NODE_POLYFILL_SHIMS[
+        'vite-plugin-node-polyfills/shims/buffer'
+      ],
+      'vite-plugin-node-polyfills/shims/global': NODE_POLYFILL_SHIMS[
+        'vite-plugin-node-polyfills/shims/global'
+      ],
     },
   },
 }));

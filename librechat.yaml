@@ -1,6 +1,14 @@
 version: 1.3.12
 cache: true
 
+interface:
+  agents:
+    use: true
+    create: true
+    public: true
+  marketplace:
+    use: true
+
 endpoints:
   custom:
     - name: "Perplexity"
